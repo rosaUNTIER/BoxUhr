@@ -39,7 +39,7 @@ void loop() {
   // lese Rundendauer ein
   runde = 60000 * getPotiValue();
   // lese Pausendauer ein
-  Pause = 60000 * getPotiValue();
+  pause = 60000 * getPotiValue();
   // lese Rundenanzahl ein
   runden = getPotiValue();
   // Durchlauf von Runde+Pause
