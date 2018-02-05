@@ -1,13 +1,4 @@
-
-# Boxing Clock  :alarm_clock: 
-## professional trainings in time!
-
-The goal of this project is to build a clock with [Arduino](https://www.arduino.cc/),  
-that could be used for professional box-trainings.
-  
-  
-  
-#### MIT License
+MIT License
 
 Copyright (c) 2018 rosaUntier
 
@@ -28,4 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
