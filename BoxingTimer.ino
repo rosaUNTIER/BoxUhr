@@ -1,57 +1,67 @@
 #include "SevSeg.h"
 SevSeg sevseg;
 
-int LEDr = A3;
-int LEDy = A4;
-int LEDg = A5;
-int box = A0;
-int button = A1;
-int poti = A2;
+int LEDr = A3; // 1k in Serie gegen Ground
+int LEDy = A4; // 1k in Serie gegen Ground
+int LEDg = A5; // 1k in Serie gegen Ground
+int box = A0;  // gegen Ground
+int button = A1; // 330 in Serie gegen Ground
+int poti = A2; // Stützkondensator parallel
 
-int runden = 0;
-int potivalue = 0;
-int buttonstate = 0;
-int lastbuttonstate = 0;
-int LEDstate = 0;
-int lastLEDstate = HIGH;
+// box Variablen
+int boxState = 0;
+unsigned long tmpBox1 = 0;
+unsigned long tmpBox2 = 0;
 
-int menu= 0;
+// Segment Variablen
+int rundenAnzahl = 2;
+int tRunde = 300;
+int tPause = 100;
 
+// CountToZero Variablen
+int timeLeft = 0;
+const unsigned long sekunde = 1000;
+unsigned long tmpSekunde1 = 0;
+unsigned long tmpSekunde2 = 0;
+
+// blink LED Variablen
+int blinkLED = 0;
+int LEDState = 0;
+int blinkCounter = 0;
+unsigned long tmpBlink1 = 0;
+unsigned long tmpBlink2 = 0;
+
+// Button Variablen
+int buttonState = 0;
+int lastButtonState = 0;
+int buttonStateMenu = 0;
+int lastButtonStateMenu = 0;
+unsigned long timeStamp = 0;
+unsigned long timeStampMenu = 0;
+
+// GetPotiValue Variablen
+int potiValue = 0;
 int tmp = 0;
-int tmp3 = 0;
-int i = 0;
-int j = 0;
-int k = 0;
+const int tMax = 300;
+const int rMax = 16;
 
-unsigned long Runde = 0;
-unsigned long Pause = 0;
-unsigned long zeit = 0;
-
-int mins=0;
-int secs=0;
-unsigned long sekunde = 1000;
-unsigned long tmp1=0;
-unsigned long tmp2=0;
-
-int mmax = 2;
-int smax = 59;
-int rmax = 15;
-unsigned long Rundemultiplier =60000;
-unsigned long Pausemultiplier =1000;
-
-int GetPotiValue(char selection);
-void WaitForPress();
-void Beep(int a, int b, int anzahl);
-void WasteTime(unsigned long t, int j);
+// Funktionen
+int GetPotiValue(int selection);
+void Beep(unsigned long a, unsigned long b, int anzahl, int displayNumber, int dec);
+void CountToZero(int Time);
+void SetLEDs(int setLEDg, int setLEDy, int setLEDr);
+void Segment(int tRunde, int tPause, int rundenAnzahl);
 
 void setup() {
+
+  // Definiere 7-Segment Display
   byte numDigits = 4;
   byte digitPins[] = {2, 5, 6, 13}; //Digits: 1,2,3,4
   byte segmentPins[] = {3, 7, 11, 9, 8, 4, 12, 10}; //Segments: A,B,C,D,E,F,G,Period
-
-  sevseg.begin(COMMON_ANODE, numDigits, digitPins, segmentPins);
+  sevseg.begin(COMMON_ANODE, numDigits, digitPins, segmentPins, false, false, true);
   sevseg.setBrightness(100);
 
+  // Setze Pins
   pinMode(box, OUTPUT);
   pinMode(button, INPUT);
   pinMode(LEDr, OUTPUT);
@@ -60,203 +70,310 @@ void setup() {
 }
 
 void loop() {
-  Runde = 0;
-  Pause = 0;
   
-  // Warte auf Start von Einstellungen
-  digitalWrite(LEDr, HIGH);
-  digitalWrite(LEDy, HIGH);
-  digitalWrite(LEDg, HIGH);
-  WaitForPress();
-  
-  // lese Rundendauer ein
-  digitalWrite(LEDr, LOW);
-  digitalWrite(LEDy, LOW);
-  digitalWrite(LEDg, HIGH);
-  Runde = Rundemultiplier * GetPotiValue(0);
-  
-  // lese Pausendauer ein
-  digitalWrite(LEDr, LOW);
-  digitalWrite(LEDy, HIGH);
-  digitalWrite(LEDg, LOW);
-  Pause = Pausemultiplier * GetPotiValue(1);
-  
-  // lese Rundenanzahl ein
-  digitalWrite(LEDr, HIGH);
-  digitalWrite(LEDy, LOW);
-  digitalWrite(LEDg, LOW);
-  runden = GetPotiValue(2);
-  
-  // Durchlauf von Runde+Pause
-  for (k = 1; k <=runden; k++) {
-    
-    // Beep für start der Runde
-    Beep(500, 250, 4);
-    
-    // Runde verstreichen lassen
-    digitalWrite(LEDr, LOW);
-    digitalWrite(LEDy, LOW);
-    digitalWrite(LEDg, HIGH);
-    WasteTime(Runde, k);
-    
-    // Beep Start der Pause
-    Beep(100, 250, 5);
-    
-    // Pause verstreichen lassen, wenn nicht letzte runde
-    digitalWrite(LEDr, HIGH);
-    digitalWrite(LEDy, LOW);
-    digitalWrite(LEDg, LOW);
-    if (k < runden) WasteTime(Pause, k);
-  }
-}
-
-void WaitForPress(){
-  buttonstate = 0;
-  lastbuttonstate = 0;
-  while(true){
-    buttonstate = digitalRead(button);
-    
-    // Button press
-    if (buttonstate != lastbuttonstate && buttonstate == HIGH) {
-      zeit = millis();
-      digitalWrite(box, HIGH);
-      delay(20);
-      digitalWrite(box, LOW);
+  // Button press
+  buttonStateMenu = digitalRead(button);
+  if (buttonStateMenu != lastButtonStateMenu && buttonStateMenu == HIGH) {
+    switch(potiValue){
+      case 1 :
+        Beep(20, 0, 1, tmp, 2);
+        timeStampMenu = millis();
+      break;
+      case 2 :
+        Beep(20, 0, 1, tmp, 0);
+        timeStampMenu = millis();
+      break;
+      case 3 :
+        Beep(20, 0, 1, tmp, 2);
+        timeStampMenu = millis();
+      break;
+      case 4 :
+        Beep(20, 0, 1, tmp, 2);
+        timeStampMenu = millis();    
+      break;
     }
-
-    // Wenn button 600ms gedrückt, dann break
-    if (buttonstate == lastbuttonstate && buttonstate == HIGH) {
-      if (millis() - zeit > 600) {
-        digitalWrite(box, HIGH);
-        delay(30);
-        digitalWrite(box, LOW);
+  }
+  
+  // Wenn button 600ms gedrückt, dann
+  // Lese Werte ein Grün = Rundendauer
+  // Rot = Pausendauer, Gelb = Anzahl an Runden
+  // Alle = Start
+  if (buttonStateMenu == lastButtonStateMenu && buttonStateMenu == HIGH) {
+    if (millis() - timeStampMenu > 600) {
+      switch (potiValue){
+        case 1 :
+          Beep(30, 0, 1, tmp, 2);
+          tRunde = GetPotiValue(0);
+          timeStampMenu = millis();
+        break;
+        case 2 :
+          Beep(30, 0, 1, tmp, 0);
+          rundenAnzahl = GetPotiValue(2);
+          timeStampMenu = millis();
+        break;
+        case 3 :
+          Beep(30, 0, 1, tmp, 2);
+          tPause = GetPotiValue(1);
+          timeStampMenu = millis();
+        break;
+        case 4 :
+          Beep(30, 0, 1, tmp, 2);
+          Segment(tRunde, tPause, rundenAnzahl);
+          timeStampMenu = millis();
         break;
       }
     }
-    
-    lastbuttonstate = buttonstate;
   }
-}
-void Beep(int a, int b, int anzahl) {
-  // a=länge v beep, b=pause zw beep, anzahl=Anzahl der Beeps
+  lastButtonStateMenu = buttonStateMenu;
   
-  for (i = 1; i <= anzahl; i++) {    
-    digitalWrite(box, HIGH);
-    digitalWrite(LEDr, HIGH);
-    digitalWrite(LEDy, HIGH);
-    digitalWrite(LEDg, HIGH);
-    delay(a);
-    digitalWrite(box, LOW);
-    digitalWrite(LEDr, LOW);
-    digitalWrite(LEDy, LOW);
-    digitalWrite(LEDg, LOW);
-    delay(b);
+  // display PotiValue on LEDs and
+  // tRunde/tPause/rundenAnzahl/Gesamtzeit on 7-Seg
+  potiValue = map(analogRead(poti), 0, 1023, 1, 4);
+  switch (potiValue){
+    case 1 :
+      SetLEDs(HIGH, LOW, LOW);
+      sevseg.setNumber(tRunde, 2);
+    break;
+    case 2 :
+      SetLEDs(LOW, HIGH, LOW);
+      sevseg.setNumber(rundenAnzahl, 0);
+    break;
+    case 3 :
+      SetLEDs(LOW, LOW, HIGH);
+      sevseg.setNumber(tPause, 2);
+    break;
+    case 4 :
+      tmpBlink1 = millis();
+    
+      if((tmpBlink1 - tmpBlink2) >= 250){
+        
+        tmpBlink2 = millis();
+        
+        if(blinkCounter % 2 == 0 && LEDState == LOW){
+          SetLEDs(HIGH, HIGH, HIGH);
+          LEDState = HIGH;
+        }
+        else if(blinkCounter % 2 == 1 && LEDState == HIGH){
+          SetLEDs(LOW, LOW, LOW);
+          LEDState = LOW;
+        }
+        blinkCounter += 1;              
+      }
+      tmp = 100*((tRunde/100)*rundenAnzahl) + 100*(((tRunde%100)*rundenAnzahl)/60) + ((tRunde%100)*rundenAnzahl)%60;
+      if(rundenAnzahl > 1){
+        tmp += 100*((tPause/100)*(rundenAnzahl-1)) + 100*(((tPause%100)*(rundenAnzahl-1))/60) + ((tPause%100)*(rundenAnzahl-1))%60;
+      }
+      sevseg.setNumber(tmp, 2);    
+    break;
+  }
+  
+  sevseg.refreshDisplay();
+}
+
+void Segment(int tRunde, int tPause, int rundenAnzahl){
+  static int k = 0;
+  static int t1 = 0;
+  static int t2 = 0;
+  static int T = 0;
+  
+  t1 = tRunde;
+  t2 = tPause;
+  T = rundenAnzahl;
+  
+  for (k = 1; k <= T; k++) {
+    
+    // Beep für start der Runde
+    Beep(500, 200, 5, t1, 2);
+    
+    // Runde verstreichen lassen
+    SetLEDs(HIGH, LOW, LOW);
+    CountToZero(t1);
+    
+    // Beep Start der Pause
+    Beep(100, 250, 5, 0, 2);
+    
+    // Pause verstreichen lassen
+    // wenn nicht letzte runde
+    if (k < T){
+      SetLEDs(LOW, LOW, HIGH);
+      CountToZero(t2);
+    }
   }
 }
 
-void WasteTime(unsigned long t ,int k) {
-  zeit = millis();
-  mins=t/60000;
-  secs=0;
-  sekunde = 1000;
-  tmp1=0;
-  tmp2=0;
+void SetLEDs(int setLEDg, int setLEDy, int setLEDr){
+  digitalWrite(LEDr, setLEDr);
+  digitalWrite(LEDg, setLEDg);
+  digitalWrite(LEDy, setLEDy);
+}
 
-  // Bleibe in der Schleife bis Pause verstrichen ist 
+void Beep(unsigned long a, unsigned long b, int anzahl, int displayNumber, int dec) {
+  // a=länge v beep, b=pause zw beep, anzahl=Anzahl der Beeps
+  static int i = 0;
+  static int c = 0;
+  c = dec;
+  i = anzahl;
+  tmpBox1 = 0;
+  tmpBox2 = millis();
+
+  digitalWrite(box, HIGH);
+  boxState = HIGH;
+
+  while(true){
+    sevseg.setNumber(displayNumber, c);
+    sevseg.refreshDisplay();
+    tmpBox1 = millis();
+    if((tmpBox1 - tmpBox2) >= b && boxState == LOW){
+      tmpBox2 = millis();
+      digitalWrite(box, HIGH);
+      boxState = HIGH;
+    }
+    else if((tmpBox1 - tmpBox2) >=a && boxState == HIGH){
+      tmpBox2 = millis();
+      digitalWrite(box, LOW);
+      boxState = LOW;
+      i -= 1;            
+    }  
+    if(i == 0){
+      digitalWrite(box, LOW);
+      break;
+    }          
+  }
+}
+
+void CountToZero(int Time) {
+  tmpBlink1 = 0;
+  tmpBlink2 = 0;
+  blinkCounter = 0;
+  
+  timeLeft = Time;
+  tmpSekunde1=0;
+  tmpSekunde2=0;
+
+  // Bleibe in der Schleife bis Time verstrichen ist 
   // und Zeige verbleidende Zeit auf Display
-  while (millis() - zeit < t) {
-    tmp1 = millis() - zeit;
-    
-    if(tmp1 % sekunde == 0 && tmp1 != tmp2){
-      secs = secs - 1;
-      sevseg.setNumber(100 * mins + secs, 2);
-      tmp2 = tmp1;
+  while (true) {
+    tmpSekunde1 = millis();
+
+    // Zähle Sekunden
+    if(tmpSekunde1 - tmpSekunde2 >= sekunde){
+      
+      timeLeft -= 1;
+      tmpSekunde2 = millis();
+
+      // Gelbe LED leuchtet letzten 30 sekunden
+      if(timeLeft == 30){
+        SetLEDs(LOW, HIGH, LOW);
+      }
+      
+      // LED blinkt letzten 10 sekunden
+      if(timeLeft <=10){
+        tmpBlink1 = millis();
+      
+        if((tmpBlink1 - tmpBlink2) >= 250){
+          
+          tmpBlink2 = millis();
+          
+          if(blinkCounter % 2 == 0 && LEDState == LOW){
+            SetLEDs(LOW, HIGH, LOW);
+            LEDState = HIGH;
+          }
+          else if(blinkCounter % 2 == 1 && LEDState == HIGH){
+            SetLEDs(LOW, LOW, LOW);
+            LEDState = LOW;
+          }
+          blinkCounter += 1;              
+        }
+      }
+
+      // Ton Bei 10, 5, 4, 3, 2, 1 sekunden
+      if(timeLeft <= 5 || timeLeft == 10){
+        Beep(100, 0, 1, timeLeft, 2);
+      }
+
+      // Überspringe _60 - _99
+      if((timeLeft % 100) == 99){
+        timeLeft -= 40;
+      }
+
+      // Ende wenn timeLeft = 0
+      if(timeLeft == 0){
+        break;
+      }
     }
-    if(secs == 0){
-      mins = mins - 1;
-      secs = 60;
-    }
-    if(mins == 0 && secs == 30){
-      digitalWrite(LEDr, LOW);
-      digitalWrite(LEDy, HIGH);
-      digitalWrite(LEDg, LOW);
-    }
+
+    // Display timeLeft
+    sevseg.setNumber(timeLeft, 2);
     sevseg.refreshDisplay();
   }
 }
 
 int GetPotiValue(int selection) {
-  tmp = 0;
-  tmp1 = millis();
-  tmp2 = 0;
-  tmp3 = 0;
-  buttonstate = 0;
-  lastbuttonstate = 0;
+  tmpBlink1 = 0;
+  tmpBlink2 = 0;
+  blinkCounter = 0;
+  
+  buttonState = 0;
+  lastButtonState = 0;
   
   static int bound = 0;
-  static int blinkLED = 0;
 
-  // Maximum für Potivalue <-- mmax(Minunten), smax(Sekunden), rmax(Runden)
+  // Maximum für Potivalue <-- tMax(Zeit), rMax(Runden)
   // blinkLED <-- LEDr, LEDy, LEDg
   switch(selection){
   case 0 :
-    bound = mmax;
+    bound = tMax;
     blinkLED = LEDg;
-    tmp = 3;
     break;
   case 1 :
-    bound = smax;
-    blinkLED = LEDy;
-    tmp = 60;
+    bound = tMax;
+    blinkLED = LEDr;
     break;
   case 2 :
-    bound = rmax;
-    blinkLED = LEDr;
-    tmp = 15;
+    bound = rMax;
+    blinkLED = LEDy;
     break;
   }
 
+  // Bleibe in Schleife bis Button gedrückt wird
   while (true) {
-    sevseg.setNumber(tmp);
-    sevseg.refreshDisplay();
-    buttonstate = digitalRead(button);
-    tmp2 = millis();
-
+        
     // blinkLED blinkt
-    if((tmp2 - tmp1) >= 250){
-      if(tmp3 % 2 == 0 && LEDstate == LOW){
+    tmpBlink1 = millis();
+    if((tmpBlink1 - tmpBlink2) >= 250){
+      if(blinkCounter % 2 == 0 && LEDState == LOW){
         digitalWrite(blinkLED, HIGH);
-        LEDstate = HIGH;
-        tmp1 = millis();
+        LEDState = HIGH;
+        tmpBlink2 = millis();
       }
-      else if(tmp3 % 2 == 1 && LEDstate == HIGH){
-        digitalWrite(blinkLED, LOW);
-        LEDstate = LOW;
-        tmp1 = millis();
+      else if(blinkCounter % 2 == 1 && LEDState == HIGH){
+        SetLEDs(LOW, LOW, LOW);
+        LEDState = LOW;
+        tmpBlink2 = millis();
       }
-        tmp3 = tmp3 + 1;              
+        blinkCounter += 1;              
     }
     
     // Button press
-    if (buttonstate != lastbuttonstate && buttonstate == HIGH) {
-      zeit = millis();
-      digitalWrite(box, HIGH);
-      delay(20);
-      digitalWrite(box, LOW);
+    buttonState = digitalRead(button);
+    if (buttonState != lastButtonState && buttonState == HIGH) {
+      timeStamp = millis();
+      Beep(20, 0, 1, tmp, 2);
     }
 
-    // Wenn button 600ms gedrückt, dann return potivalue
-    if (buttonstate == lastbuttonstate && buttonstate == HIGH) {
-      if (millis() - zeit > 600) {
-        digitalWrite(box, HIGH);
-        delay(30);
-        digitalWrite(box, LOW);
+    // Wenn button 600ms gedrückt, dann return potiValue
+    if (buttonState == lastButtonState && buttonState == HIGH) {
+      if (millis() - timeStamp > 600) {
+        Beep(30, 0, 1, tmp, 2);
         return tmp;
       }
     }
-    
-    lastbuttonstate = buttonstate;
-    potivalue = analogRead(poti);
-    tmp = map(potivalue, 0, 1023, 1, bound+1);
+    lastButtonState = buttonState;
+
+    // display PotiValue
+    potiValue = map(analogRead(poti), 0, 1023, 1, bound);
+    tmp = (potiValue / 60) * 100 + (potiValue % 60);   
+    sevseg.setNumber(tmp, 2);
+    sevseg.refreshDisplay();
   }
 }
