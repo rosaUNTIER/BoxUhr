@@ -77,19 +77,19 @@ void loop() {
   if (buttonStateMenu != lastButtonStateMenu && buttonStateMenu == HIGH) {
     switch(potiValue){
       case 1 :
-        Beep(20, 0, 1, tmp, 2);
+        beep(20, 0, 1, tmp, 2);
         timeStampMenu = millis();
       break;
       case 2 :
-        Beep(20, 0, 1, tmp, 0);
+        beep(20, 0, 1, tmp, 0);
         timeStampMenu = millis();
       break;
       case 3 :
-        Beep(20, 0, 1, tmp, 2);
+        beep(20, 0, 1, tmp, 2);
         timeStampMenu = millis();
       break;
       case 4 :
-        Beep(20, 0, 1, tmp, 2);
+        beep(20, 0, 1, tmp, 2);
         timeStampMenu = millis();    
       break;
     }
