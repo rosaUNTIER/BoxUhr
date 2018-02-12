@@ -103,17 +103,17 @@ void loop() {
     if (millis() - timeStampMenu > 600) {
       switch (potiValue){
         case 1 :
-          Beep(30, 0, 1, tmp, 2);
+          beep(30, 0, 1, tmp, 2);
           tRunde = getPotiValue(0);
           timeStampMenu = millis();
         break;
         case 2 :
-          Beep(30, 0, 1, tmp, 0);
+          beep(30, 0, 1, tmp, 0);
           rundenAnzahl = getPotiValue(2);
           timeStampMenu = millis();
         break;
         case 3 :
-          Beep(30, 0, 1, tmp, 2);
+          beep(30, 0, 1, tmp, 2);
           tPause = getPotiValue(1);
           timeStampMenu = millis();
         break;
