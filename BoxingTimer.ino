@@ -47,11 +47,11 @@ const int tMax = 300,
           rMax = 16;
 
 // Funktionen
-int GetPotiValue(int selection);
-void Beep(unsigned long a, unsigned long b, int anzahl, int displayNumber, int dec);
-void CountToZero(int Time);
-void SetLEDs(int setLEDg, int setLEDy, int setLEDr);
-void Segment(int tRunde, int tPause, int rundenAnzahl);
+int getPotiValue(int selection);
+void beep(unsigned long a, unsigned long b, int anzahl, int displayNumber, int dec);
+void countToZero(int Time);
+void setLEDs(int setLEDg, int setLEDy, int setLEDr);
+void segment(int tRunde, int tPause, int rundenAnzahl);
 
 void setup() {
 
@@ -104,22 +104,22 @@ void loop() {
       switch (potiValue){
         case 1 :
           Beep(30, 0, 1, tmp, 2);
-          tRunde = GetPotiValue(0);
+          tRunde = getPotiValue(0);
           timeStampMenu = millis();
         break;
         case 2 :
           Beep(30, 0, 1, tmp, 0);
-          rundenAnzahl = GetPotiValue(2);
+          rundenAnzahl = getPotiValue(2);
           timeStampMenu = millis();
         break;
         case 3 :
           Beep(30, 0, 1, tmp, 2);
-          tPause = GetPotiValue(1);
+          tPause = getPotiValue(1);
           timeStampMenu = millis();
         break;
         case 4 :
-          Beep(30, 0, 1, tmp, 2);
-          Segment(tRunde, tPause, rundenAnzahl);
+          beep(30, 0, 1, tmp, 2);
+          segment(tRunde, tPause, rundenAnzahl);
           timeStampMenu = millis();
         break;
       }
@@ -151,11 +151,11 @@ void loop() {
         tmpBlink2 = millis();
         
         if(blinkCounter % 2 == 0 && LEDState == LOW){
-          SetLEDs(HIGH, HIGH, HIGH);
+          setLEDs(HIGH, HIGH, HIGH);
           LEDState = HIGH;
         }
         else if(blinkCounter % 2 == 1 && LEDState == HIGH){
-          SetLEDs(LOW, LOW, LOW);
+          setLEDs(LOW, LOW, LOW);
           LEDState = LOW;
         }
         blinkCounter += 1;              
@@ -171,7 +171,7 @@ void loop() {
   sevseg.refreshDisplay();
 }
 
-void Segment(int tRunde, int tPause, int rundenAnzahl){
+void segment(int tRunde, int tPause, int rundenAnzahl){
   static int k = 0;
   static int t1 = 0;
   static int t2 = 0;
@@ -184,31 +184,31 @@ void Segment(int tRunde, int tPause, int rundenAnzahl){
   for (k = 1; k <= T; k++) {
     
     // Beep für start der Runde
-    Beep(500, 200, 5, t1, 2);
+    beep(500, 200, 5, t1, 2);
     
     // Runde verstreichen lassen
-    SetLEDs(HIGH, LOW, LOW);
-    CountToZero(t1);
+    setLEDs(HIGH, LOW, LOW);
+    countToZero(t1);
     
     // Beep Start der Pause
-    Beep(100, 250, 5, 0, 2);
+    beep(100, 250, 5, 0, 2);
     
     // Pause verstreichen lassen
     // wenn nicht letzte runde
     if (k < T){
-      SetLEDs(LOW, LOW, HIGH);
-      CountToZero(t2);
+      setLEDs(LOW, LOW, HIGH);
+      countToZero(t2);
     }
   }
 }
 
-void SetLEDs(int setLEDg, int setLEDy, int setLEDr){
+void setLEDs(int setLEDg, int setLEDy, int setLEDr){
   digitalWrite(LEDr, setLEDr);
   digitalWrite(LEDg, setLEDg);
   digitalWrite(LEDy, setLEDy);
 }
 
-void Beep(unsigned long a, unsigned long b, int anzahl, int displayNumber, int dec) {
+void beep(unsigned long a, unsigned long b, int anzahl, int displayNumber, int dec) {
   // a=länge v beep, b=pause zw beep, anzahl=Anzahl der Beeps
   static int i = 0;
   static int c = 0;
@@ -242,7 +242,7 @@ void Beep(unsigned long a, unsigned long b, int anzahl, int displayNumber, int d
   }
 }
 
-void CountToZero(int Time) {
+void countToZero(int Time) {
   tmpBlink1 = 0;
   tmpBlink2 = 0;
   blinkCounter = 0;
@@ -276,11 +276,11 @@ void CountToZero(int Time) {
           tmpBlink2 = millis();
           
           if(blinkCounter % 2 == 0 && LEDState == LOW){
-            SetLEDs(LOW, HIGH, LOW);
+            setLEDs(LOW, HIGH, LOW);
             LEDState = HIGH;
           }
           else if(blinkCounter % 2 == 1 && LEDState == HIGH){
-            SetLEDs(LOW, LOW, LOW);
+            setLEDs(LOW, LOW, LOW);
             LEDState = LOW;
           }
           blinkCounter += 1;              
@@ -289,7 +289,7 @@ void CountToZero(int Time) {
 
       // Ton Bei 10, 5, 4, 3, 2, 1 sekunden
       if(timeLeft <= 5 || timeLeft == 10){
-        Beep(100, 0, 1, timeLeft, 2);
+        beep(100, 0, 1, timeLeft, 2);
       }
 
       // Überspringe _60 - _99
@@ -309,7 +309,7 @@ void CountToZero(int Time) {
   }
 }
 
-int GetPotiValue(int selection) {
+int getPotiValue(int selection) {
   tmpBlink1 = 0;
   tmpBlink2 = 0;
   blinkCounter = 0;
@@ -359,13 +359,13 @@ int GetPotiValue(int selection) {
     buttonState = digitalRead(button);
     if (buttonState != lastButtonState && buttonState == HIGH) {
       timeStamp = millis();
-      Beep(20, 0, 1, tmp, 2);
+      beep(20, 0, 1, tmp, 2);
     }
 
     // Wenn button 600ms gedrückt, dann return potiValue
     if (buttonState == lastButtonState && buttonState == HIGH) {
       if (millis() - timeStamp > 600) {
-        Beep(30, 0, 1, tmp, 2);
+        beep(30, 0, 1, tmp, 2);
         return tmp;
       }
     }
