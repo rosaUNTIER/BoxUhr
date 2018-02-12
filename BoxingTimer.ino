@@ -132,15 +132,15 @@ void loop() {
   potiValue = map(analogRead(poti), 0, 1023, 1, 4);
   switch (potiValue){
     case 1 :
-      SetLEDs(HIGH, LOW, LOW);
+      setLEDs(HIGH, LOW, LOW);
       sevseg.setNumber(tRunde, 2);
     break;
     case 2 :
-      SetLEDs(LOW, HIGH, LOW);
+      setLEDs(LOW, HIGH, LOW);
       sevseg.setNumber(rundenAnzahl, 0);
     break;
     case 3 :
-      SetLEDs(LOW, LOW, HIGH);
+      setLEDs(LOW, LOW, HIGH);
       sevseg.setNumber(tPause, 2);
     break;
     case 4 :
@@ -264,7 +264,7 @@ void countToZero(int Time) {
 
       // Gelbe LED leuchtet letzten 30 sekunden
       if(timeLeft == 30){
-        SetLEDs(LOW, HIGH, LOW);
+        setLEDs(LOW, HIGH, LOW);
       }
       
       // LED blinkt letzten 10 sekunden
@@ -348,7 +348,7 @@ int getPotiValue(int selection) {
         tmpBlink2 = millis();
       }
       else if(blinkCounter % 2 == 1 && LEDState == HIGH){
-        SetLEDs(LOW, LOW, LOW);
+        setLEDs(LOW, LOW, LOW);
         LEDState = LOW;
         tmpBlink2 = millis();
       }
