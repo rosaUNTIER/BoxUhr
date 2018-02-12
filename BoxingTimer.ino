@@ -1,49 +1,50 @@
 #include "SevSeg.h"
 SevSeg sevseg;
 
-int LEDr = A3; // 1k in Serie gegen Ground
-int LEDy = A4; // 1k in Serie gegen Ground
-int LEDg = A5; // 1k in Serie gegen Ground
-int box = A0;  // gegen Ground
-int button = A1; // 330 in Serie gegen Ground
-int poti = A2; // Stützkondensator parallel
+int LEDr = A3, // 1k in Serie gegen Ground
+    LEDy = A4, // 1k in Serie gegen Ground
+    LEDg = A5, // 1k in Serie gegen Ground
+    box = A0, // gegen Ground
+    button = A1, // 330 in Serie gegen Ground
+    poti = A2, // Stützkondensator parallel
 
 // box Variablen
-int boxState = 0;
-unsigned long tmpBox1 = 0;
-unsigned long tmpBox2 = 0;
+    boxState = 0;
+unsigned long tmpBox1 = 0,
+              tmpBox2 = 0;
 
 // Segment Variablen
-int rundenAnzahl = 2;
-int tRunde = 300;
-int tPause = 100;
+int rundenAnzahl = 2,
+    tRunde = 300,
+    tPause = 100,
 
 // CountToZero Variablen
-int timeLeft = 0;
+    timeLeft = 0;
+
 const unsigned long sekunde = 1000;
-unsigned long tmpSekunde1 = 0;
-unsigned long tmpSekunde2 = 0;
+unsigned long tmpSekunde1 = 0,
+              tmpSekunde2 = 0;
 
 // blink LED Variablen
-int blinkLED = 0;
-int LEDState = 0;
-int blinkCounter = 0;
-unsigned long tmpBlink1 = 0;
-unsigned long tmpBlink2 = 0;
+int blinkLED = 0,
+    LEDState = 0,
+    blinkCounter = 0;
+unsigned long tmpBlink1 = 0,
+              tmpBlink2 = 0;
 
 // Button Variablen
-int buttonState = 0;
-int lastButtonState = 0;
-int buttonStateMenu = 0;
-int lastButtonStateMenu = 0;
-unsigned long timeStamp = 0;
-unsigned long timeStampMenu = 0;
+int buttonState = 0,
+    lastButtonState = 0,
+    buttonStateMenu = 0,
+    lastButtonStateMenu = 0;
+unsigned long timeStamp = 0,
+              timeStampMenu = 0;
 
 // GetPotiValue Variablen
-int potiValue = 0;
-int tmp = 0;
-const int tMax = 300;
-const int rMax = 16;
+int potiValue = 0,
+    tmp = 0;
+const int tMax = 300,
+          rMax = 16;
 
 // Funktionen
 int GetPotiValue(int selection);
