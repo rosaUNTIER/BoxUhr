@@ -242,10 +242,11 @@ void beep(unsigned long a, unsigned long b, int anzahl, int displayNumber, int d
   }
 }
 
-void countToZero(int Time) {
+void CountToZero(int Time) {
   tmpBlink1 = 0;
   tmpBlink2 = 0;
   blinkCounter = 0;
+  LEDState = LOW;
   
   timeLeft = Time;
   tmpSekunde1=0;
@@ -263,8 +264,9 @@ void countToZero(int Time) {
       tmpSekunde2 = millis();
 
       // Gelbe LED leuchtet letzten 30 sekunden
-      if(timeLeft == 30){
-        setLEDs(LOW, HIGH, LOW);
+      if(timeLeft <= 30 && LEDState == LOW){
+        SetLEDs(LOW, HIGH, LOW);
+        LEDState = HIGH;
       }
       
       // LED blinkt letzten 10 sekunden
@@ -276,11 +278,11 @@ void countToZero(int Time) {
           tmpBlink2 = millis();
           
           if(blinkCounter % 2 == 0 && LEDState == LOW){
-            setLEDs(LOW, HIGH, LOW);
+            SetLEDs(LOW, HIGH, LOW);
             LEDState = HIGH;
           }
           else if(blinkCounter % 2 == 1 && LEDState == HIGH){
-            setLEDs(LOW, LOW, LOW);
+            SetLEDs(LOW, LOW, LOW);
             LEDState = LOW;
           }
           blinkCounter += 1;              
@@ -289,7 +291,7 @@ void countToZero(int Time) {
 
       // Ton Bei 10, 5, 4, 3, 2, 1 sekunden
       if(timeLeft <= 5 || timeLeft == 10){
-        beep(100, 0, 1, timeLeft, 2);
+        Beep(100, 0, 1, timeLeft, 2);
       }
 
       // Überspringe _60 - _99
