@@ -261,13 +261,13 @@ void CountToZero(int Time) {
     buttonState = digitalRead(button);
     if (buttonState != lastButtonState && buttonState == HIGH) {
       timeStamp = millis();
-      Beep(20, 0, 1, tmp, 2);
+      beep(20, 0, 1, tmp, 2);
     }
 
     // Wenn button 600ms gedrückt, dann Hold()
     if (buttonState == lastButtonState && buttonState == HIGH) {
       if (millis() - timeStamp > 600) {
-        Beep(30, 0, 1, tmp, 2);
+        beep(30, 0, 1, tmp, 2);
         hold();
       }
     }
