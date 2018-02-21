@@ -52,6 +52,7 @@ void beep(unsigned long a, unsigned long b, int anzahl, int displayNumber, int d
 void countToZero(int Time);
 void setLEDs(int setLEDg, int setLEDy, int setLEDr);
 void segment(int tRunde, int tPause, int rundenAnzahl);
+void hold();
 
 void setup() {
 
@@ -255,6 +256,23 @@ void CountToZero(int Time) {
   // Bleibe in der Schleife bis Time verstrichen ist 
   // und Zeige verbleidende Zeit auf Display
   while (true) {
+      
+    // Button press
+    buttonState = digitalRead(button);
+    if (buttonState != lastButtonState && buttonState == HIGH) {
+      timeStamp = millis();
+      Beep(20, 0, 1, tmp, 2);
+    }
+
+    // Wenn button 600ms gedrückt, dann Hold()
+    if (buttonState == lastButtonState && buttonState == HIGH) {
+      if (millis() - timeStamp > 600) {
+        Beep(30, 0, 1, tmp, 2);
+        Hold();
+      }
+    }
+    lastButtonState = buttonState;
+      
     tmpSekunde1 = millis();
 
     // Zähle Sekunden
@@ -378,5 +396,28 @@ int getPotiValue(int selection) {
     tmp = (potiValue / 60) * 100 + (potiValue % 60);   
     sevseg.setNumber(tmp, 2);
     sevseg.refreshDisplay();
+  }
+}
+
+void Hold(){
+  buttonState = LOW;
+  lastButtonState = LOW;
+  
+  while(true){
+    // Button press
+    buttonState = digitalRead(button);
+    if (buttonState != lastButtonState && buttonState == HIGH) {
+      timeStamp = millis();
+      Beep(20, 0, 1, tmp, 2);
+    }
+    
+    // Wenn button 600ms gedrückt, dann break
+    if (buttonState == lastButtonState && buttonState == HIGH) {
+      if (millis() - timeStamp > 600) {
+        Beep(30, 0, 1, tmp, 2);
+        break;
+      }
+    }
+    lastButtonState = buttonState;
   }
 }
