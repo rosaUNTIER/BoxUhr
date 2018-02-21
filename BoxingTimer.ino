@@ -268,7 +268,7 @@ void CountToZero(int Time) {
     if (buttonState == lastButtonState && buttonState == HIGH) {
       if (millis() - timeStamp > 600) {
         Beep(30, 0, 1, tmp, 2);
-        Hold();
+        hold();
       }
     }
     lastButtonState = buttonState;
@@ -399,7 +399,7 @@ int getPotiValue(int selection) {
   }
 }
 
-void Hold(){
+void hold(){
   buttonState = LOW;
   lastButtonState = LOW;
   
