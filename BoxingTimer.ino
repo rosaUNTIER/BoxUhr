@@ -110,7 +110,7 @@ void main_Sets(boolean game) {
     potiValue = map(analogRead(poti), 0, 1023, 0, maxPotiValue);
     if (potiValue != lastPotiValue){
       timeStampMenu = millis();
-      if (potiValue == 4){
+      if (potiValue == 4 || (potiValue == 0 && game == true)){
         tmp = 100*((tRunde/100)*rundenAnzahl) + 100*(((tRunde%100)*rundenAnzahl)/60) + ((tRunde%100)*rundenAnzahl)%60;
           if(rundenAnzahl > 1){
             tmp += 100*((tPause/100)*(rundenAnzahl-1)) + 100*(((tPause%100)*(rundenAnzahl-1))/60) + ((tPause%100)*(rundenAnzahl-1))%60;
@@ -122,7 +122,9 @@ void main_Sets(boolean game) {
     switch (potiValue){
       case 0: 
         setLEDs(LOW, LOW, LOW);
-        sevseg.setChars("back");
+        if (millis() - timeStampMenu < 500 && game == true) sevseg.setNumber(tmp, 2);
+        else if (millis() - timeStampMenu < 500 && game == false) sevseg.setChars("sets");
+        else sevseg.setChars("back");
         if (buttonClick() == 3) exitStatus = 1;
       break;
       case 1: 
@@ -225,9 +227,12 @@ void main_Stoppuhr() {
   
   while (true){
     potiValue = map(analogRead(poti), 0, 1023, 0, 1);
+    if (potiValue != lastPotiValue) timeStampMenu = millis();
+    lastPotiValue = potiValue;
     switch (potiValue){
       case 0:
-        sevseg.setChars("back");
+        if (millis() - timeStampMenu < 500) sevseg.setChars("stop");
+        else sevseg.setChars("back");
         setLEDs(LOW, LOW, LOW);
         if (buttonClick() == 3) exitStatus = 1;
       break;
@@ -317,11 +322,11 @@ void main_Game() {
   
   while (true){
    
-    potiValue = map(analogRead(poti), 0, 1023, 0, 4);
+    potiValue = map(analogRead(poti), 0, 1023, 0, 3);
     if (potiValue != lastPotiValue){
       timeStampMenu = millis();
       // Berechne Gesamtzeit
-      if (potiValue == 4){
+      if (potiValue == 3 || potiValue == 1){
         tmp = 100*((tRunde/100)*rundenAnzahl) + 100*(((tRunde%100)*rundenAnzahl)/60) + ((tRunde%100)*rundenAnzahl)%60;
           if(rundenAnzahl > 1){
             tmp += 100*((tPause/100)*(rundenAnzahl-1)) + 100*(((tPause%100)*(rundenAnzahl-1))/60) + ((tPause%100)*(rundenAnzahl-1))%60;
@@ -333,29 +338,30 @@ void main_Game() {
     switch (potiValue){
       case 0: 
         setLEDs(LOW, LOW, LOW);
-        sevseg.setChars("back");
+        if (millis() - timeStampMenu < 500) sevseg.setChars("rctn");
+        else sevseg.setChars("back");
         if (buttonClick() == 3) exitStatus = 1;
       break;
       case 1: 
         setLEDs(HIGH, LOW, LOW);
         if (millis() - timeStampMenu < 500) sevseg.setChars("sets");
         else sevseg.setNumber(tmp, 2);
-        if (buttonClick() == 3) main_Sets(true);
+        if (buttonClick() == 3){
+          main_Sets(true); 
+          timeStampMenu = millis();
+        }
         exitStatus = 0;
       break;
       case 2:
         setLEDs(LOW, HIGH, LOW);      
         if (millis() - timeStampMenu < 500) sevseg.setChars("lvl");
         else sevseg.setNumber(level);
-        if (buttonClick() == 3) level = setSetsParameter(2);
+        if (buttonClick() == 3){
+          level = setSetsParameter(2); 
+          timeStampMenu = millis();
+        }
       break;
       case 3:
-        setLEDs(LOW, LOW, HIGH);
-        if (millis() - timeStampMenu < 500) sevseg.setChars("mode");
-        else sevseg.setNumber(tPause, 2);
-        if (buttonClick() == 3) ;
-      break;
-      case 4:
         blinkLEDs(4);
         if (millis() - timeStampMenu < 500) sevseg.setChars(" go ");
         else sevseg.setNumber(tmp, 2); 
@@ -369,7 +375,7 @@ void main_Game() {
 }
 
 // Starte das Game
-void runGame(int tRunde, int tPause, int rundenAnzahl, int startLevel){
+void runGame(int tRunde, int tPause, int rundenAnzahl, int Level){
   static int k = 0;
   static int T = 0;
 
@@ -380,7 +386,7 @@ void runGame(int tRunde, int tPause, int rundenAnzahl, int startLevel){
     
     // Runde verstreichen lassen
     setLEDs(HIGH, LOW, LOW);
-    countToZero(tRunde, 0, k + startLevel - 1);
+    countToZero(tRunde, 0, Level);
     if (exitStatus == 1) break;
 
     // Pause verstreichen lassen
@@ -396,7 +402,6 @@ void runGame(int tRunde, int tPause, int rundenAnzahl, int startLevel){
 
 // Zähle von Time bis null(in sekunden)
 // wenn level > 0 dann läuft das game
-// Diverse events bei bestimmten zeitpunkten
 void countToZero(int Time, int selection, int level) {  
   static int timeLeft = 0;
 
@@ -423,7 +428,7 @@ void countToZero(int Time, int selection, int level) {
         else if (selection == 1) setLEDs(LOW, LOW, HIGH);
     }
 
-    if (level > 0) randomBeep(2500 - level * 200, 5500 - level * 300);
+    if (level > 0) randomBeep(2500 - level * 200, 5500 - level * 300, level);
     
     // Zähle Sekunden
     tmp = countInterval(1000, 0);
@@ -623,17 +628,19 @@ void beep(unsigned long a, unsigned long b, int anzahl) {
 }
 
 // nach random zeit zwischen lBound und uBound --> Beep
-void randomBeep(unsigned long lBound, unsigned long uBound){
+void randomBeep(unsigned long lBound, unsigned long uBound, int level){
   
   static unsigned long t = 0;
   static unsigned long tRun = 0;
+  static int combo = 0;
   
   if (t == 0) {
     t = millis();
     tRun = random(lBound, uBound);
   }
   else if (millis() - t > tRun){
-    beep(70, 0, 1);
+    combo = (millis() % level) + 1;
+    beep(70, 110, combo);
     t = 0;
   }
 }
