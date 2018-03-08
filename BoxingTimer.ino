@@ -8,66 +8,51 @@ int box = A0; // gegen Ground
 int button = A1; // 330 in Serie gegen Ground
 int poti = A2; // Stützkondensator parallel
 
-// box Variablen
-int boxState = 0;
-unsigned long tmpBox1 = 0;
-unsigned long tmpBox2 = 0;
+int exitStatus = 0;
 
 // Segment Variablen
 int rundenAnzahl = 2;
 int tRunde = 300;
 int tPause = 100;
 
-// CountToZero Variablen
-int timeLeft = 0;
-
 const unsigned long sekunde = 1000;
-unsigned long tmpSekunde1 = 0;
-unsigned long tmpSekunde2 = 0;
 
-// blink LED Variablen
 int blinkLED = 0;
-boolean LEDState = false;
-int blinkCounter = 0;
-unsigned long tmpBlink1 = 0;
-unsigned long tmpBlink2 = 0;
 
-// Button Variablen
-unsigned long tButton = 0;
-int buttonState = 0;
-int lastButtonState = 0;
-unsigned long timeStampMenu = 0;
+unsigned long timeStampMenu = 0;  // timestamp für menü
 
-// GetPotiValue Variablen
+// Poti Variablen
 int lastPotiValue = 9999;
 int potiValue = 0;
 int tmp = 0;
-const int tMax = 300;
-const int rMax = 16;
+const int tMax = 300; // maximum in zeit 300 = 3:00
+const int rMax = 16;  // maximum für rundenAnzahl
 
 // StoppUhr Variablen
-int timeCount = 55;
+int timeCount = 0; 
 int timeFreeze = 0;
 int *timeToDisplay = NULL;
 
 // Funktionen
-void main_Sets();
-int getPotiValue(int selection);
-void segment(int tRunde, int tPause, int rundenAnzahl);
-void countToZero(int Time, int selection);
-void hold();
+void main_Sets(boolean game);
+int setSetsParameter(int selection);
+void runSets(int tRunde, int tPause, int rundenAnzahl);
 
 void main_Stoppuhr();
+void runStoppuhr();
 
 void main_Game();
+void runGame(int tRunde, int tPause, int rundenAnzahl, int startLevel);
 
-boolean buttonClick();
-boolean doubleClick();
-boolean longClick();
+void countToZero(int Time, int selection, int level);
+void hold();
+
+int buttonClick();
 
 void setLEDs(int setLEDg, int setLEDy, int setLEDr);
 void blinkLEDs(int selection);
 
+int countInterval(unsigned long interval, int reset);
 void beep(unsigned long a, unsigned long b, int anzahl);
 
 void setup() {
@@ -85,6 +70,8 @@ void setup() {
   pinMode(LEDr, OUTPUT);
   pinMode(LEDy, OUTPUT);
   pinMode(LEDg, OUTPUT);
+
+  //Serial.begin(9600);
 }
 
 void loop() {
@@ -93,285 +80,82 @@ void loop() {
     case 1:
       sevseg.setChars("sets");
       setLEDs(HIGH, LOW, LOW);
-      buttonClick();
-      if (longClick() == true) main_Sets();
+      if (buttonClick() == 3) main_Sets(false);
     break;
     case 2:
       sevseg.setChars("stop");
       setLEDs(LOW, HIGH, LOW);
-      buttonClick();
-      if (longClick() == true) main_Stoppuhr();
+      if (buttonClick() == 3) main_Stoppuhr();
     break;
     case 3: 
       sevseg.setChars("rctn");
       setLEDs(LOW, LOW, HIGH);
-      buttonClick();
-      if (longClick() == true) main_Game();
+      if (buttonClick() == 3) main_Game();
     break;
   }
   sevseg.refreshDisplay();
 }
 
-void main_Sets() {
+
+void main_Sets(boolean game) {
+  static int maxPotiValue = 4;
+  exitStatus = 0;
+  if (game == true) maxPotiValue = 3;
+  else maxPotiValue = 4;
   timeStampMenu = millis();
+  
   while (true){
-    buttonClick();
-    potiValue = map(analogRead(poti), 0, 1023, 0, 4);
-    if (potiValue != lastPotiValue) timeStampMenu = millis();
+    
+    potiValue = map(analogRead(poti), 0, 1023, 0, maxPotiValue);
+    if (potiValue != lastPotiValue){
+      timeStampMenu = millis();
+      if (potiValue == 4){
+        tmp = 100*((tRunde/100)*rundenAnzahl) + 100*(((tRunde%100)*rundenAnzahl)/60) + ((tRunde%100)*rundenAnzahl)%60;
+          if(rundenAnzahl > 1){
+            tmp += 100*((tPause/100)*(rundenAnzahl-1)) + 100*(((tPause%100)*(rundenAnzahl-1))/60) + ((tPause%100)*(rundenAnzahl-1))%60;
+          }     
+      }
+    }
     lastPotiValue = potiValue;
     
     switch (potiValue){
       case 0: 
         setLEDs(LOW, LOW, LOW);
         sevseg.setChars("back");
-        if (longClick() == true) goto Exit_main_Sets;
+        if (buttonClick() == 3) exitStatus = 1;
       break;
       case 1: 
         setLEDs(HIGH, LOW, LOW);
         if (millis() - timeStampMenu < 500) sevseg.setChars("rnde");
         else sevseg.setNumber(tRunde, 2);
-        if (longClick() == true) tRunde = getPotiValue(0);
+        if (buttonClick() == 3) tRunde = setSetsParameter(0);
       break;
       case 2:
         setLEDs(LOW, HIGH, LOW);      
         if (millis() - timeStampMenu < 500) sevseg.setChars("rndn");
         else sevseg.setNumber(rundenAnzahl);
-        if (longClick() == true) rundenAnzahl = getPotiValue(2);
+        if (buttonClick() == 3) rundenAnzahl = setSetsParameter(2);
       break;
       case 3:
         setLEDs(LOW, LOW, HIGH);
         if (millis() - timeStampMenu < 500) sevseg.setChars("paus");
         else sevseg.setNumber(tPause, 2);
-        if (longClick() == true) tPause = getPotiValue(1);
+        if (buttonClick() == 3) tPause = setSetsParameter(1);
       break;
       case 4:
         blinkLEDs(4);
         if (millis() - timeStampMenu < 500) sevseg.setChars(" go ");
-        else {
-          tmp = 100*((tRunde/100)*rundenAnzahl) + 100*(((tRunde%100)*rundenAnzahl)/60) + ((tRunde%100)*rundenAnzahl)%60;
-          if(rundenAnzahl > 1){
-            tmp += 100*((tPause/100)*(rundenAnzahl-1)) + 100*(((tPause%100)*(rundenAnzahl-1))/60) + ((tPause%100)*(rundenAnzahl-1))%60;
-          }
-          sevseg.setNumber(tmp, 2); 
-        }
-        if (longClick() == true) segment(tRunde, tPause, rundenAnzahl);
+        else sevseg.setNumber(tmp, 2); 
+        if (buttonClick() == 3) runSets(tRunde, tPause, rundenAnzahl);
       break;
     }
-    sevseg.refreshDisplay();
-  }
-  Exit_main_Sets:;
-}
-
-void main_Stoppuhr() {
-  while (true){
-    potiValue = map(analogRead(poti), 0, 1023, 0, 1);
-    buttonClick();
-    switch (potiValue){
-      case 0:
-        sevseg.setChars("back");
-        setLEDs(LOW, LOW, LOW);
-        if (longClick() == true) goto Exit_Stoppuhr;
-      break;
-      case 1:
-        sevseg.setChars(" go ");
-        blinkLEDs(4);
-        buttonClick();
-        if (longClick() == true) goto Start_Stoppuhr;
-      break;
-    }
-    sevseg.refreshDisplay();
-  }
-  Start_Stoppuhr:;
-  setLEDs(HIGH, LOW, LOW);
-  timeCount = -1;
-  timeFreeze = 0;
-  timeToDisplay = &timeCount;
-  tmpSekunde1=0;
-  tmpSekunde2=0;
-
-  // Bleibe in der Schleife bis Time verstrichen ist 
-  // und Zeige verbleidende Zeit auf Display
-  while (true) {
     
-    // Zähle Sekunden
-    tmpSekunde1 = millis();
-    if(tmpSekunde1 - tmpSekunde2 >= sekunde){
-      
-      timeCount += 1;
-      tmpSekunde2 = millis();
-
-      // Überspringe _60 - _99
-      if ((timeCount % 100) == 60){
-        timeCount += 40;
-      }
-    }
-   
-    // Button press
-    if (longClick() == true){
-      if (timeToDisplay == &timeCount){
-        break;
-      }
-      else{
-        setLEDs(LOW, LOW, HIGH);
-        timeFreeze = timeCount;
-        timeToDisplay = &timeFreeze;
-        while (true){
-          sevseg.setNumber(*timeToDisplay, 2);
-          sevseg.refreshDisplay();
-          if (buttonClick() == true) {
-            timeToDisplay = &timeCount;
-            setLEDs(HIGH, LOW, LOW);
-            break;
-          }
-        }
-      }
-    }
-    if (buttonClick() == true){
-      if (timeToDisplay == &timeFreeze){
-        timeToDisplay = &timeCount;
-        setLEDs(HIGH, LOW, LOW);
-      }
-      else{
-        timeFreeze = timeCount;
-        timeToDisplay = &timeFreeze;
-        setLEDs(LOW, HIGH, LOW);
-      }
-    }
-    // Display timeToDisplay
-    sevseg.setNumber(*timeToDisplay, 2);
-    sevseg.refreshDisplay();
-  }
-  
-Exit_Stoppuhr:;
-}
-
-void main_Game(){
-  
-}
-
-void segment(int tRunde, int tPause, int rundenAnzahl) {
-  static int k = 0;
-  static int T = 0;
-  
-  T = rundenAnzahl;
-  
-  for (k = 1; k <= T; k++) {
-    
-    // Beep für start der Runde
-    beep(500, 200, 5);
-    
-    // Runde verstreichen lassen
-    setLEDs(HIGH, LOW, LOW);
-    countToZero(tRunde, 0);
-    
-    // Beep Start der Pause
-    beep(100, 250, 5);
-    
-    // Pause verstreichen lassen
-    // wenn nicht letzte runde
-    if (k < T){
-      setLEDs(LOW, LOW, HIGH);
-      countToZero(tPause, 1);
-    }
-  }
-}
-
-void setLEDs(int setLEDg, int setLEDy, int setLEDr) {
-  digitalWrite(LEDr, setLEDr);
-  digitalWrite(LEDg, setLEDg);
-  digitalWrite(LEDy, setLEDy);
-}
-
-void beep(unsigned long a, unsigned long b, int anzahl) {
-  // a=länge v beep, b=pause zw beep, anzahl=Anzahl der Beeps
-  static int i = 0;
-  i = anzahl;
-  tmpBox1 = 0;
-  tmpBox2 = millis();
-
-  digitalWrite(box, HIGH);
-  boxState = HIGH;
-  sevseg.setChars("beep");
-  
-  while(true){
-    sevseg.refreshDisplay();
-    tmpBox1 = millis();
-
-    if(i == 0){
-      break;
-    } 
-    else if((tmpBox1 - tmpBox2) >= b && boxState == LOW){
-      sevseg.setChars("beep");
-      tmpBox2 = millis();
-      digitalWrite(box, HIGH);
-      boxState = HIGH;
-    }
-    else if((tmpBox1 - tmpBox2) >=a && boxState == HIGH){
-      sevseg.setChars("");
-      tmpBox2 = millis();
-      digitalWrite(box, LOW);
-      boxState = LOW;
-      i -= 1;            
-    }          
-  }
-}
-
-void countToZero(int Time, int selection) {  
-  timeLeft = Time;
-  tmpSekunde1=0;
-  tmpSekunde2=0;
-
-  // Bleibe in der Schleife bis Time verstrichen ist 
-  // und Zeige verbleidende Zeit auf Display
-  while (true) {
-      
-    buttonClick();
-
-    // Wenn button 600ms gedrückt, dann hold()
-    if (longClick() == true) {
-        hold();
-        if (timeLeft <= 30) setLEDs(LOW, HIGH, LOW);
-        else if (selection == 0) setLEDs(HIGH, LOW, LOW);
-        else if (selection == 1) setLEDs(LOW, LOW, HIGH);
-    }      
-    tmpSekunde1 = millis();
-
-    // Zähle Sekunden
-    if(tmpSekunde1 - tmpSekunde2 >= sekunde){
-      
-      timeLeft -= 1;
-      tmpSekunde2 = millis();
-
-      // Ton Bei 10, 3, 2, 1 sekunden
-      if(timeLeft == 10 && selection == 0){
-        beep(233, 100, 3);
-      }
-      if(timeLeft <= 3){
-        beep(100, 0, 1);
-      }
-
-      // Überspringe _60 - _99
-      if((timeLeft % 100) == 99){
-        timeLeft -= 40;
-      }
-
-      // Ende wenn timeLeft = 0
-      if(timeLeft == 0){
-        break;
-      }
-    }
-
-    // Gelbe LED leuchtet letzten 30 sekunden
-    if(timeLeft <= 30 && selection == 0) blinkLEDs(5);
-    else if(timeLeft <= 30 && selection == 1) blinkLEDs(7);
-    
-    // Display timeLeft
-    sevseg.setNumber(timeLeft, 2);
+    if (exitStatus == 1) break;
     sevseg.refreshDisplay();
   }
 }
 
-int getPotiValue(int selection) {
+int setSetsParameter(int selection) {
    static int bound = 0;
 
   // Maximum für Potivalue <-- tMax(Zeit), rMax(Runden)
@@ -395,15 +179,279 @@ int getPotiValue(int selection) {
   while (true) {
         
     blinkLEDs(blinkLED);    
-    buttonClick();
-
+    
     // Wenn button 600ms gedrückt, dann return potiValue
-    if (longClick() == true) return tmp;
+    if (buttonClick() == 3) return tmp;
     
     // display PotiValue
     potiValue = map(analogRead(poti), 0, 1023, 1, bound);
     tmp = (potiValue / 60) * 100 + (potiValue % 60);   
     sevseg.setNumber(tmp, 2);
+    sevseg.refreshDisplay();
+  }
+}
+
+void runSets(int tRunde, int tPause, int rundenAnzahl) {
+  static int k = 0;
+  static int T = 0;
+
+  exitStatus = 0;
+  T = rundenAnzahl;
+  
+  for (k = 1; k <= T; k++) {
+    
+    // Runde verstreichen lassen
+    setLEDs(HIGH, LOW, LOW);
+    countToZero(tRunde, 0, 0);
+    if (exitStatus == 1) break;
+
+    // Pause verstreichen lassen
+    // wenn nicht letzte runde
+    if (k < T){
+      setLEDs(LOW, LOW, HIGH);
+      countToZero(tPause, 1, 0);
+      if (exitStatus == 1) break;
+    }
+  }
+  beep(100, 250, 5);
+}
+
+
+void main_Stoppuhr() {
+  exitStatus = 0;
+  
+  while (true){
+    potiValue = map(analogRead(poti), 0, 1023, 0, 1);
+    switch (potiValue){
+      case 0:
+        sevseg.setChars("back");
+        setLEDs(LOW, LOW, LOW);
+        if (buttonClick() == 3) exitStatus = 1;
+      break;
+      case 1:
+        sevseg.setChars(" go ");
+        blinkLEDs(4);
+        if (buttonClick() == 3) runStoppuhr();
+        exitStatus = 0;
+      break;
+    }
+    if (exitStatus == 1) break;
+    sevseg.refreshDisplay();
+  }
+}
+  
+void runStoppuhr() {
+  setLEDs(HIGH, LOW, LOW);
+  timeCount = 0;
+  timeFreeze = 0;
+  timeToDisplay = &timeCount;
+  exitStatus = 0;
+  countInterval(1000, 1);
+  
+  while (true) {
+    
+    // Zähle Sekunden
+    timeCount += countInterval(1000, 0);
+    // Überspringe _60 - _99
+    if ((timeCount % 100) == 60){
+        timeCount += 40;
+    }
+
+
+    switch (buttonClick()){
+    // Button press
+      // Weiter
+      case 1:
+        if (timeToDisplay == &timeFreeze){
+          timeToDisplay = &timeCount;
+          setLEDs(HIGH, LOW, LOW);
+        }
+        
+        // Lap
+        else if (timeToDisplay == &timeCount){
+          timeFreeze = timeCount;
+          timeToDisplay = &timeFreeze;
+          setLEDs(LOW, HIGH, LOW);
+        }
+        break;
+      case 3:
+        if (timeToDisplay == &timeFreeze){
+          setLEDs(LOW, LOW, HIGH);
+  
+          // eigentliche Pause
+          while (true){
+            sevseg.setNumber(*timeToDisplay, 2);
+            sevseg.refreshDisplay();
+            
+            // Continue: bei buttonClick break und reset countInterval
+            if (buttonClick() == 1){
+              setLEDs(HIGH, LOW, LOW);
+              countInterval(1000, 1);
+              timeToDisplay = &timeCount;
+              break;
+            }
+          }
+        }
+        else if (timeToDisplay == &timeCount){
+          exitStatus = 1;
+        }
+        break;      
+    }
+    
+    // Display timeToDisplay
+    sevseg.setNumber(*timeToDisplay, 2);
+    sevseg.refreshDisplay();
+    if (exitStatus == 1) break;
+  }
+}
+
+
+void main_Game() {
+  static int level = 1;
+  exitStatus = 0;
+  timeStampMenu = millis();
+  
+  while (true){
+   
+    potiValue = map(analogRead(poti), 0, 1023, 0, 4);
+    if (potiValue != lastPotiValue){
+      timeStampMenu = millis();
+      // Berechne Gesamtzeit
+      if (potiValue == 4){
+        tmp = 100*((tRunde/100)*rundenAnzahl) + 100*(((tRunde%100)*rundenAnzahl)/60) + ((tRunde%100)*rundenAnzahl)%60;
+          if(rundenAnzahl > 1){
+            tmp += 100*((tPause/100)*(rundenAnzahl-1)) + 100*(((tPause%100)*(rundenAnzahl-1))/60) + ((tPause%100)*(rundenAnzahl-1))%60;
+          }     
+      }
+    }
+    lastPotiValue = potiValue;
+    
+    switch (potiValue){
+      case 0: 
+        setLEDs(LOW, LOW, LOW);
+        sevseg.setChars("back");
+        if (buttonClick() == 3) exitStatus = 1;
+      break;
+      case 1: 
+        setLEDs(HIGH, LOW, LOW);
+        if (millis() - timeStampMenu < 500) sevseg.setChars("sets");
+        else sevseg.setNumber(tmp, 2);
+        if (buttonClick() == 3) main_Sets(true);
+        exitStatus = 0;
+      break;
+      case 2:
+        setLEDs(LOW, HIGH, LOW);      
+        if (millis() - timeStampMenu < 500) sevseg.setChars("lvl");
+        else sevseg.setNumber(level);
+        if (buttonClick() == 3) level = setSetsParameter(2);
+      break;
+      case 3:
+        setLEDs(LOW, LOW, HIGH);
+        if (millis() - timeStampMenu < 500) sevseg.setChars("mode");
+        else sevseg.setNumber(tPause, 2);
+        if (buttonClick() == 3) ;
+      break;
+      case 4:
+        blinkLEDs(4);
+        if (millis() - timeStampMenu < 500) sevseg.setChars(" go ");
+        else sevseg.setNumber(tmp, 2); 
+        if (buttonClick() == 3) runGame(tRunde, tPause, rundenAnzahl, level);
+      break;
+    }
+    
+    if (exitStatus == 1) break;
+    sevseg.refreshDisplay();
+  }
+}
+
+void runGame(int tRunde, int tPause, int rundenAnzahl, int startLevel){
+  static int k = 0;
+  static int T = 0;
+
+  exitStatus = 0;
+  T = rundenAnzahl;
+  
+  for (k = 1; k <= T; k++) {
+    
+    // Runde verstreichen lassen
+    setLEDs(HIGH, LOW, LOW);
+    countToZero(tRunde, 0, k + startLevel - 1);
+    if (exitStatus == 1) break;
+
+    // Pause verstreichen lassen
+    // wenn nicht letzte runde
+    if (k < T){
+      setLEDs(LOW, LOW, HIGH);
+      countToZero(tPause, 1, 0);
+      if (exitStatus == 1) break;
+    }
+  }
+  beep(100, 250, 5);
+}
+
+
+void countToZero(int Time, int selection, int level) {  
+  static int timeLeft = 0;
+
+  exitStatus = 0;
+  timeLeft = Time;
+  sevseg.setNumber(timeLeft, 2);
+  countInterval(1000, 1);
+  
+  if (selection == 0)  beep(500, 200, 5);
+  else  beep(100, 250, 5);
+  
+  // Bleibe in der Schleife bis Time verstrichen ist 
+  // und Zeige verbleidende Zeit auf Display
+  while (true) {
+
+    // Wenn button 600ms gedrückt, dann hold()
+    if (buttonClick() == 3) {
+        hold();
+        if (exitStatus == 1) break;
+        countInterval(1000, 1);
+        sevseg.setNumber(timeLeft, 2);
+        if (timeLeft <= 30) setLEDs(LOW, HIGH, LOW);
+        else if (selection == 0) setLEDs(HIGH, LOW, LOW);
+        else if (selection == 1) setLEDs(LOW, LOW, HIGH);
+    }
+
+    if (level > 0) randomBeep(2500 - level * 200, 5500 - level * 300);
+    
+    // Zähle Sekunden
+    tmp = countInterval(1000, 0);
+
+    if(tmp > 0){
+      
+      timeLeft -= tmp;
+
+      // Ton Bei 10, 3, 2, 1 sekunden
+      if(timeLeft == 10 && selection == 0 && level == 0){
+        beep(233, 100, 3);
+      }
+      if(timeLeft <= 3 && selection == 1){
+        beep(100, 0, 1);
+      }
+
+      // Überspringe _60 - _99
+      if((timeLeft % 100) > 60){
+        timeLeft -= 40;
+      }
+
+      // Ende wenn timeLeft = 0
+      if(timeLeft == 0){
+        break;
+      }
+      
+
+    }
+
+    // Gelbe LED leuchtet letzten 30 sekunden
+    if(timeLeft <= 30 && selection == 0) blinkLEDs(5);
+    else if(timeLeft <= 30 && selection == 1) blinkLEDs(7);
+    
+    // Display timeLeft
+    sevseg.setNumber(timeLeft, 2);
     sevseg.refreshDisplay();
   }
 }
@@ -419,51 +467,82 @@ void hold() {
     // Blink
     blinkLEDs(4);
     
-    buttonClick();
+    if (buttonClick() == 2){
+      exitStatus = 1;
+      break;
+    }
     
     // Wenn button 600ms gedrückt, dann break
-    if (longClick() == true) break;
+    if (buttonClick() == 3) break;
   }
 }
 
-boolean buttonClick() {
+
+int countInterval(unsigned long interval, int reset) {
+  static unsigned long tmpInterval1 = millis();
+  static unsigned long tmpInterval2 = millis();
+  static long Zeit = 0;
+  static unsigned long Interval = 0;
+
+  if(reset == 1){
+    tmpInterval2 = millis();
+    Interval = interval;
+  }
   
+  // interval in milliseconds
+  tmpInterval1 = millis();
+  if (tmpInterval1 - tmpInterval2 > Interval){
+    Zeit = long((tmpInterval1 - tmpInterval2) / Interval);
+    tmpInterval2 = millis();
+  }
+  else Zeit = 0;
+
+  return Zeit;
+}
+
+int buttonClick() {
+
+static unsigned long tButton = 0;
+static unsigned long tButton_release = 0;
+static int returnValue = 0;
+static int buttonState = LOW;
+static int lastButtonState = LOW;
+
+  returnValue = 0;
   buttonState = digitalRead(button);
   
-  if (buttonState != lastButtonState && buttonState == HIGH && millis() - tButton > 400) {
-   tButton = millis();
+  if (buttonState != lastButtonState && buttonState == HIGH && (millis() - tButton) > 400) {
    beep(20, 0, 1);
-   lastButtonState = buttonState;
-   return true;
-  }
-  lastButtonState = buttonState;
-  return false;
-}
-
-boolean doubleClick() {
-  buttonState = digitalRead(button);
-  if (buttonState != lastButtonState && buttonState == HIGH && millis() - tButton < 400) {
-   beep(30, 0, 1);
-   lastButtonState = buttonState;
-   return true;
-  }
-  lastButtonState = buttonState;
-  return false;
-}
-
-boolean longClick() {
-   buttonState = digitalRead(button);
-   if (buttonState == lastButtonState && buttonState == HIGH && millis() - tButton > 600) {
-   beep(40, 0, 1);
-   lastButtonState = LOW;
    tButton = millis();
-   return true;
+   returnValue = 1;
   }
-  lastButtonState = lastButtonState;
-  return false;
+  else if (buttonState != lastButtonState && buttonState == HIGH && (millis() - tButton) <= 300) {
+   beep(30, 0, 1);
+   tButton = millis();
+   returnValue = 2;
+  }
+  if (buttonState == lastButtonState && buttonState == HIGH && (millis() - tButton) > 600) {
+   beep(40, 0, 1);
+   tButton = millis();
+   returnValue = 3;
+  }
+  
+  lastButtonState = buttonState;
+  
+  return returnValue;
+}
+
+void setLEDs(int setLEDg, int setLEDy, int setLEDr) {
+  digitalWrite(LEDr, setLEDr);
+  digitalWrite(LEDg, setLEDg);
+  digitalWrite(LEDy, setLEDy);
 }
 
 void blinkLEDs(int selection) {
+  static unsigned long tmpBlink1 = 0;
+  static unsigned long tmpBlink2 = 0;
+  static boolean LEDState = false;
+  
   tmpBlink1 = millis();
     
   if ((tmpBlink1 - tmpBlink2) >= 250){      
@@ -492,5 +571,53 @@ void blinkLEDs(int selection) {
       break;
     }
     LEDState = !LEDState;       
+  }
+}
+
+void beep(unsigned long a, unsigned long b, int anzahl) {
+  // a=länge v beep, b=pause zw beep, anzahl=Anzahl der Beeps
+  static int i = 0;
+  i = anzahl;
+  static unsigned long tmpBox = 0;
+  static boolean boxState = false;
+
+  boxState = true;
+  digitalWrite(box, boxState);  
+  sevseg.setChars("beep");
+  tmpBox = millis();
+  while(true){
+    sevseg.refreshDisplay();
+
+    if(i == 0){
+      break;
+    } 
+    else if((millis() - tmpBox) > b && boxState == false){
+      sevseg.setChars("beep");
+      tmpBox = millis();
+      boxState = !boxState;
+      digitalWrite(box, boxState);
+    }
+    else if((millis() - tmpBox) > a && boxState == true){
+      sevseg.setChars("");
+      tmpBox = millis();
+      boxState = !boxState;
+      digitalWrite(box, boxState);
+      i -= 1;            
+    }          
+  }
+}
+
+void randomBeep(unsigned long lBound, unsigned long uBound){
+  
+  static unsigned long t = 0;
+  static unsigned long tRun = 0;
+  
+  if (t == 0) {
+    t = millis();
+    tRun = random(lBound, uBound);
+  }
+  else if (millis() - t > tRun){
+    beep(70, 0, 1);
+    t = 0;
   }
 }
