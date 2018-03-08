@@ -74,6 +74,7 @@ void setup() {
   //Serial.begin(9600);
 }
 
+// Home Screen
 void loop() {
   potiValue = map(analogRead(poti), 0, 1023, 1, 3);
   switch(potiValue){
@@ -96,7 +97,7 @@ void loop() {
   sevseg.refreshDisplay();
 }
 
-
+// Main funktion für Sets
 void main_Sets(boolean game) {
   static int maxPotiValue = 4;
   exitStatus = 0;
@@ -155,6 +156,7 @@ void main_Sets(boolean game) {
   }
 }
 
+// Lese Werte von Poti ein
 int setSetsParameter(int selection) {
    static int bound = 0;
 
@@ -191,6 +193,7 @@ int setSetsParameter(int selection) {
   }
 }
 
+// Starte Sets
 void runSets(int tRunde, int tPause, int rundenAnzahl) {
   static int k = 0;
   static int T = 0;
@@ -216,7 +219,7 @@ void runSets(int tRunde, int tPause, int rundenAnzahl) {
   beep(100, 250, 5);
 }
 
-
+// Main funktion für Stoppuhr
 void main_Stoppuhr() {
   exitStatus = 0;
   
@@ -239,7 +242,8 @@ void main_Stoppuhr() {
     sevseg.refreshDisplay();
   }
 }
-  
+
+// Starte Stoppuhr
 void runStoppuhr() {
   setLEDs(HIGH, LOW, LOW);
   timeCount = 0;
@@ -253,7 +257,7 @@ void runStoppuhr() {
     // Zähle Sekunden
     timeCount += countInterval(1000, 0);
     // Überspringe _60 - _99
-    if ((timeCount % 100) == 60){
+    if ((timeCount % 100) >= 60){
         timeCount += 40;
     }
 
@@ -305,7 +309,7 @@ void runStoppuhr() {
   }
 }
 
-
+// Main funktion für das Game
 void main_Game() {
   static int level = 1;
   exitStatus = 0;
@@ -364,6 +368,7 @@ void main_Game() {
   }
 }
 
+// Starte das Game
 void runGame(int tRunde, int tPause, int rundenAnzahl, int startLevel){
   static int k = 0;
   static int T = 0;
@@ -389,7 +394,9 @@ void runGame(int tRunde, int tPause, int rundenAnzahl, int startLevel){
   beep(100, 250, 5);
 }
 
-
+// Zähle von Time bis null(in sekunden)
+// wenn level > 0 dann läuft das game
+// Diverse events bei bestimmten zeitpunkten
 void countToZero(int Time, int selection, int level) {  
   static int timeLeft = 0;
 
@@ -456,6 +463,7 @@ void countToZero(int Time, int selection, int level) {
   }
 }
 
+// Warte bis longClick, bei doppelclick goto home
 void hold() {
   
   while(true){
@@ -477,7 +485,7 @@ void hold() {
   }
 }
 
-
+// zählt wieviele intervalle vergangen sind, bei reset wird der counter auf 0 gesetzt
 int countInterval(unsigned long interval, int reset) {
   static unsigned long tmpInterval1 = millis();
   static unsigned long tmpInterval2 = millis();
@@ -500,6 +508,10 @@ int countInterval(unsigned long interval, int reset) {
   return Zeit;
 }
 
+// Wenn Button gedrückt dann
+// return 1 für Click
+// return 2 für Double-Clik (innerhalb 0,4s)
+// return 3 für Long-Click (0,6s gedrückt halten)
 int buttonClick() {
 
 static unsigned long tButton = 0;
@@ -532,12 +544,14 @@ static int lastButtonState = LOW;
   return returnValue;
 }
 
+// Setzt alle LEDs
 void setLEDs(int setLEDg, int setLEDy, int setLEDr) {
   digitalWrite(LEDr, setLEDr);
   digitalWrite(LEDg, setLEDg);
   digitalWrite(LEDy, setLEDy);
 }
 
+// Blinkt je nach input eine/mehrere LEDs 2 mal pro sekunde
 void blinkLEDs(int selection) {
   static unsigned long tmpBlink1 = 0;
   static unsigned long tmpBlink2 = 0;
@@ -574,8 +588,9 @@ void blinkLEDs(int selection) {
   }
 }
 
+// a=länge v beep, b=pause zw beep, anzahl=Anzahl der Beeps
 void beep(unsigned long a, unsigned long b, int anzahl) {
-  // a=länge v beep, b=pause zw beep, anzahl=Anzahl der Beeps
+  
   static int i = 0;
   i = anzahl;
   static unsigned long tmpBox = 0;
@@ -607,6 +622,7 @@ void beep(unsigned long a, unsigned long b, int anzahl) {
   }
 }
 
+// nach random zeit zwischen lBound und uBound --> Beep
 void randomBeep(unsigned long lBound, unsigned long uBound){
   
   static unsigned long t = 0;
